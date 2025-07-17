@@ -17,15 +17,14 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 /* eslint-enable global-require */
-
+const API_KEY = '95294aa6d12846488be861d93858bb0d';
 const Map = () => (
   <MapContainer bounds={NZ_BOUNDS} style={{ height: '100%' }}>
     <MapClickListener />
     <TileLayer
-      // eslint-disable-next-line max-len
-      attribution='© <a href="//www.linz.govt.nz/linz-copyright">LINZ CC BY 4.0</a> © <a href="//www.linz.govt.nz/data/linz-data/linz-basemaps/data-attribution">Imagery Basemap contributors</a>'
-      url="https://basemaps.linz.govt.nz/v1/tiles/aerial/EPSG:3857/{x}/{y}/{z}.webp"
-    />
+    attribution='© <a href="//www.linz.govt.nz/linz-copyright">LINZ CC BY 4.0</a> © <a href="//www.linz.govt.nz/data/linz-data/linz-basemaps/data-attribution">Imagery Basemap contributors</a>'
+    url={`https://basemaps.linz.govt.nz/v1/tiles/aerial/EPSG:3857/{z}/{x}/{y}.webp?api=${API_KEY}`}
+  />
     <BookmarkMarkers />
   </MapContainer>
 );
