@@ -1,5 +1,8 @@
 using System.Text.Json.Serialization;
 
+// not ideal to create all the models in cs file.
+// done due to test timing only
+
 namespace WhoAmIAPI.Models
 {
     public class AgifyResponse
