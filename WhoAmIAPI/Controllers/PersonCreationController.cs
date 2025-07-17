@@ -1,43 +1,67 @@
-using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Mvc;
+using System.Globalization;
+using WhoAmIAPI.Models;
 
-namespace WhoAmIAPI.Models
+
+namespace WhoAmIAPI.Controllers
 {
-    public class AgifyResponse
+    [ApiController]
+    [Route("[controller]")]
+    public class PersonCreationController : ControllerBase
     {
-        public string Name { get; set; }
-        public int? Age { get; set; }
-    }
+        private readonly HttpClient _httpClient;
 
-    public class GenderizeResponse
-    {
-        public string Name { get; set; }
-        public string Gender { get; set; }
-    }
+        public PersonCreationController(IHttpClientFactory httpClientFactory)
+        {
+            _httpClient = httpClientFactory.CreateClient();
+        }
 
-    public class CountryProbability
-    {
-        [JsonPropertyName("country_id")]
-        public string CountryId { get; set; }
-        public double Probability { get; set; }
-    }
+        [HttpGet]
+        public async Task<IActionResult> Get([FromQuery] string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return BadRequest("Please submit a name");
 
-    public class NationalizeResponse
-    {
-        public string Name { get; set; }
-        public List<CountryProbability> Country { get; set; }
-    }
+            var agifyUrl = $"https://api.agify.io?name={name}";
+            var agifyResponse = await _httpClient.GetFromJsonAsync<AgifyResponse>(agifyUrl);
 
-    public class CountryInfo
-    {
-        public string Country { get; set; } = "";
-        public double Probability { get; set; }
-    }
+            var genderizeUrl = $"https://api.genderize.io?name={name}";
+            var genderizeResponse = await _httpClient.GetFromJsonAsync<GenderizeResponse>(genderizeUrl);
 
-    public class PersonInfo
-    {
-        public string Name { get; set; }
-        public int? Age { get; set; }
-        public string Gender { get; set; }
-        public List<CountryInfo> Nationality { get; set; } = new();
+            var nationalizeUrl = $"https://api.nationalize.io?name={name}";
+            var nationalizeResponse = await _httpClient.GetFromJsonAsync<NationalizeResponse>(nationalizeUrl);
+            
+            var desiredCountry = "";
+            
+            var countries = nationalizeResponse?.Country?.Select(c =>
+            {
+                try
+                {
+                    var region = new RegionInfo(c.CountryId);
+                  
+                    return new CountryInfo
+                        {
+                            Country = region.EnglishName,
+                            Probability = c.Probability
+                        };
+                      
+                }
+                catch
+                {
+                    return null;
+                }
+            }).Where(c => c != null).ToList();
+           
+           desiredCountry = countries?.OrderByDescending(c => c.Probability).FirstOrDefault()?.Country ?? "";
+            var result = new PersonInfo
+            {
+                Name = name,
+                Age = agifyResponse?.Age,
+                Gender = genderizeResponse?.Gender,
+                Nationality = desiredCountry
+            };
+
+            return Ok(result);
+        }
     }
 }
